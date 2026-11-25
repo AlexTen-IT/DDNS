@@ -1,15 +1,52 @@
-Configura una infraestructura con un sistema de DHCP y DNS (DDNS) en Linux, con las siguientes características:
+\# Actividad 2.18 — Seguridad en el SDLC
 
-Cada servidor debe estar en MV Linux independientes.
-Cada servidor ha de tener una tarjeta externa en modo puente y la otra interna.
-Los servidores se 'veran' por la tarjeta interna. El direccionamiento IP de la red interna lo eliges tú.
-El servidor DHCP reparte como DNS la dirección del server DNS que estás configurando.
-Configura cada servicio en una MV y finalmente comprueba como un cliente se conecta, adquiere configuración IP y esto se registra en el servidor DNS.
-Ten en cuenta que puedes llegar a modificar los siguientes documentos:
 
-Fichero de configuración de red de ambas MV.
-Fichero de configuracion de dhcp(dhcp4-server.conf y dhcp-ddns-server.conf)
-Fichero con la clave que hayas usado para DDNS.
-Fichero named.conf.local y named.conf.options.
-Fichero de zona inversa y directa.
-Debes entregar tu proyecto DDNS en una estructura Vagrant con todo lo necesario para la correcta puesta en marcha de todos los servicios de manera automatizada.
+
+Este repositorio implementa controles de seguridad automatizados dentro del ciclo de vida del desarrollo de software.
+
+
+
+\## Herramientas utilizadas
+
+
+
+\- \*\*GitHub Actions\*\*: ejecuta el pipeline automáticamente.
+
+\- \*\*Semgrep\*\*: realiza análisis estático de seguridad del código (SAST).
+
+\- \*\*Trivy\*\*: analiza dependencias y detecta vulnerabilidades conocidas.
+
+\- \*\*GitHub Issues\*\*: se utiliza como sistema de seguimiento de tickets.
+
+
+
+\## Funcionamiento del pipeline
+
+
+
+Cada vez que se realiza un `push` a la rama `main` o se abre un pull request:
+
+
+
+1\. Se ejecuta un análisis SAST con Semgrep.
+
+2\. Se escanean las dependencias del proyecto con Trivy.
+
+3\. Se generan reportes en formato SARIF.
+
+4\. Si se detecta una vulnerabilidad crítica, se crea automáticamente un issue.
+
+5\. El despliegue simulado solo se ejecuta si no hay errores de seguridad.
+
+
+
+\## Control de despliegue
+
+
+
+El job `deploy` está configurado para ejecutarse únicamente si los análisis de seguridad anteriores finalizan correctamente.
+
+
+
+Si Trivy detecta una vulnerabilidad crítica o alta, el pipeline falla, se crea un ticket y el despliegue queda bloqueado.
+

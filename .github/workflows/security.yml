@@ -1,0 +1,80 @@
+name: Security Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  sast:
+    name: Analisis SAST con Semgrep
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
+      - name: Ejecutar Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: p/ci
+          generateSarif: '1'
+          sarifFile: semgrep.sarif
+
+      - name: Subir reporte Semgrep
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+
+  dependency-scan:
+    name: Escaneo de dependencias con Trivy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
+      - name: Ejecutar Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+
+      - name: Subir reporte Trivy
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+
+  create-security-ticket:
+    name: Crear ticket de vulnerabilidad critica
+    needs: [dependency-scan]
+    if: failure()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Crear incidencia
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: "Vulnerabilidad critica detectada",
+              body: "El pipeline ha detectado una vulnerabilidad critica. No se debe desplegar hasta corregirla.",
+              labels: ["security", "critical"]
+            })
+
+  deploy:
+    name: Despliegue seguro simulado
+    needs: [sast, dependency-scan]
+    if: success()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Autorizar despliegue
+        run: echo "Analisis de seguridad superado. Despliegue autorizado."
